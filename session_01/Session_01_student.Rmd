@@ -1,7 +1,7 @@
 ---
 title: "Tutorial 1 · Reproducible Research Workflow"
 subtitle: "Empirical Research in Accounting, Auditing and Capital Markets · WS 2026/27"
-author: "Jan Seitz"
+author: "Clara Gross"
 date: "22 October 2026"
 output:
   html_document:
@@ -113,8 +113,8 @@ Then check *Tools → Global Options → Git/SVN* and restart RStudio.
 
 ```{r chunk_2_2, eval=FALSE}
 ## Use the e-mail address of your GitHub account
-usethis::use_git_config(user.name  = "Jan Seitz",
-                        user.email = "jan.seitz@lmu.de")
+usethis::use_git_config(user.name  = "ClaraGross",
+                        user.email = "clara.gross@campus.lmu.de")
 ```
 
 ### Chunk 2.3 · Give RStudio a key to GitHub (personal access token)
@@ -369,6 +369,7 @@ inhabitants[inhabitants < 500000]
 How many are they?
 
 ```{r task_A1}
+inhabitants[inhabitants>1000000]
 
 
 ```
@@ -419,6 +420,11 @@ What happens and why?
 How could you have noticed **before** the error?
 
 ```{r task_B, error=TRUE}
+
+sum(m2[,"inhabitants"])
+
+#The numbers are turned into text. Could have looked at the colour of "inhabitants".
+
 
 
 ```
