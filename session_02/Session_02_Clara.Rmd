@@ -61,7 +61,7 @@ Every merge needs a **key**: one or more variables that identify an observation 
 In accounting research, the most important keys are:
 
 | Identifier | Identifies | Source | Watch out |
-|-------------------|-------------------|-----------------|-----------------|
+|-------------------|-------------------|------------------|------------------|
 | `gvkey` | a firm | Compustat | 6-digit **text** with leading zeros |
 | `permno` | a security (share class) | CRSP | a firm can have several permnos |
 | `cusip` | a security | US/Canada | changes after name changes |
@@ -243,7 +243,21 @@ Treating all of them as "zero" or simply dropping them can bias your results.
 ## Missing per variable
 ## Three kinds of "missing" in the SRN data:
 ##   (1) value is NA, (2) value is the code "NOT_FOUND", (3) the row does not exist at all
+
+
+srn_raw |> 
+  group_by(field_slug) |> 
+  summarise(rows=n(),
+            na=sum(is.na(value)),
+            not_found=sum(value=="NOT_FOUND",na.rm=TRUE),
+            share_found=mean(!is.na(value)&value!="NOT_FOUND")) |> 
+  arrange(share_found) |> 
+  print(n=30)
+
 ## (3) Missing rows: how many company-years should there be?
+n_company_years <- srn_raw |> distinct(company_id,year) |> nrow()
+
+n_company_years #each indicator should have this many rows
 
 
 ```
@@ -252,11 +266,25 @@ Treating all of them as "zero" or simply dropping them can bias your results.
 
 ```{r chunk_3_2}
 ## Countries: spot the problem
+srn_companies |> count(country) |> print(n=30)
+#Some countries are doubled because of a space
+
 ## Invisible trailing spaces
+srn_companies |> filter(country != str_trim(country)) |> select(name, country)
+
 ## Firms without ISIN: what do their IDs look like?
+#ISIN is the main identifier here, if that is missing we can't do much with the data
+srn_companies |> filter(is.na(isin)) |> select(id, name, country)
+
+
 ## Does the ISIN country prefix match the country? (not always — and that can be fine)
-
-
+srn_companies |> 
+  filter(!is.na(isin)) |>
+  mutate(isin_prefix = str_sub(isin,1,2)) |> 
+  count (country, isin_prefix) |> 
+  arrange(country,desc(n))
+  
+### takeaway: look at your data before working with it
 ```
 
 ## Duplicates
@@ -268,9 +296,18 @@ If not, find out *why* before you decide what to do.
 
 ```{r chunk_3_3}
 ## SRN: key = company_id + year + field_slug
-## Compustat (Tutorial 1): key = gvkey + fyear?
-## Why? Look at one duplicate
+srn_raw |> 
+  count(company_id, year, field_slug) |> 
+  filter(n>1)
+# n>1 means there is at least 2
 
+## Compustat (Tutorial 1): key = gvkey + fyear?
+cs <- read_csv(here("data","compustat.csv"),
+               col_types=cols(gvkey=col_character()),guess_max = Inf)
+cs |> count(gvkey, fyear) |> filter(n>1) |> head()
+
+## Why? Look at one duplicate
+cs |> filter(gvkey=="001062") |> select(gvkey, fyear, indfmt, conm, at, sale)
 
 ```
 
@@ -278,9 +315,18 @@ The Compustat duplicates are the same firm-year in two **formats**: `INDL` (indu
 The standard solution is to keep `indfmt == "INDL"`.
 
 ```{r chunk_3_3b}
+
+cs_indl <- cs |> filter(indfmt=="INDL",!is.na(fyear))
+cs_indl |> count(gvkey,fyear) |> filter(n>1) |> nrow()
+
 ## Who is left?
+cs_indl |> 
+  add_count(gvkey, fyear) |> 
+  filter(n>1) |> 
+  select(gvkey, fyear, datadate, conm, at, sale)
 
-
+# just one firm, due to 2 data dates --> usually use the newest datadate
+# no values for at and sales --> unproblematic to leave this firm out
 ```
 
 One firm reports **two fiscal year-ends per year** — it changed its fiscal year (June → December) and Compustat keeps both.
@@ -288,15 +334,39 @@ A rule we can defend: keep the later `datadate` per firm-year.
 
 ```{r chunk_3_3c}
 
+cs_indl <- cs_indl |> 
+  arrange(gvkey, fyear, desc(datadate)) |> 
+  distinct(gvkey, fyear, .keep_all = TRUE) #automatically get just the first one
 
+#check again
+cs_indl |> count(gvkey, fyear) |> filter(n>1) |> nrow()
+
+#no duplicates anymore
 ```
 
 ### Chunk 3.4 · From long to wide
 
 ```{r chunk_3_4}
+
+srn_wide <- srn_raw |> 
+  select(company_id, isin, company_name, country, year, field_slug, value) |> 
+  pivot_wider(names_from = field_slug, values_from = value)
+
 ## Values are text. Convert the numeric indicators:
+num_fields <- srn_fields |> filter(data_type %in% c("number", "percentage")) |> pull(slug)
 
+srn_wide <- srn_wide |> 
+  mutate(country = str_trim(country),
+         across(any_of(num_fields),~ parse_number(.x, na = c("","NA","NOT_FOUND"))),
+         currency = na_if(currency, "NOT_FOUND"))
 
+#mutate --> change, across function chooses from num_fields, then applies parse_number (~ is just part of the function, does is column wise)
+
+problems(srn_wide)
+
+srn_wide |> select(company_name, year, revenues, currency, employees_total, ghg_scope1) |> head(10)
+
+nrow(srn_wide) == n_company_years #to check, it is true
 ```
 
 **Task A:** Which share of firm-years reports Scope 1, Scope 2 (market-based) and Scope 3 emissions?
@@ -304,8 +374,8 @@ Is "missing" here a firm decision or a data problem?
 How would you find out?
 
 ```{r task_A}
-
-
+#unvollständige (AI Lösung):
+#srn_wide |> summarise(n_firm_years=n(), across(all.of(c("ghg_scope1","ghg_scope2","ghg_scope3")),~mean(!is.na(.x)),.names = "share_{.col}"))
 ```
 
 ------------------------------------------------------------------------
@@ -344,10 +414,26 @@ funnel <- tibble(step = character(), firms = integer(), firm_years = integer())
 add_step <- function(funnel, step, data) {
   add_row(funnel, step = step, firms = n_distinct(data$gvkey), firm_years = nrow(data))
 }
+
+#define funnel, "just run it"
+#function to make it easier later on
 ```
 
 ```{r chunk_4_1}
 
+bb <- cs_indl
+funnel <- add_step(funnel, "Compustat INDL, fiscal year known", bb)
+
+bb <- bb |> filter(fic == "USA", curcd == "USD")
+funnel <- add_step(funnel, "US firms reporting in USD", bb)
+
+bb <- bb |> filter(!is.na(ib))
+funnel <- add_step(funnel, "Earnings (ib) available", bb)
+
+bb <- bb |> filter(month(datadate)==12)
+funnel <- add_step(funnel, "Fiscal year ends in Dece,ber", bb)
+
+funnel
 
 ```
 
@@ -358,16 +444,30 @@ The link table says which permno belongs to which gvkey — and **when** (`linkd
 
 ```{r chunk_4_2}
 
+link_raw <- read_csv(here("data","linking_table.csv"),
+                     col_types = cols(.default = col_character())) |> 
+  rename_with(tolower)
 
+print(link_raw)
+
+count(link_raw, linktype)
 ```
 
 Standard choice: keep primary links (`linkprim` P or C) of the reliable types `LU` and `LC`.
 An open-ended link has no end date (`E` or missing) — we set it to "today".
 
 ```{r chunk_4_2b}
+
+link <- link_raw |> 
+  filter(linktype %in% c("LU","LC"), linkprim %in% c ("P", "C")) |> 
+  mutate(linkdt = as.Date(linkdt),
+         linkenddt = as.Date(if_else(linkenddt == "E", "2099-12-31", linkenddt)),
+         permno = as.numeric(lpermno)) |> 
+  select(gvkey, permno, linkdt, linkenddt)
+
 ## How many permnos per gvkey (over all time)?
 
-
+link |> count(gvkey) |> count(n, name = "n_gvkeys")
 ```
 
 ### Chunk 4.3 · Merge with a date condition
@@ -376,10 +476,29 @@ A plain join by `gvkey` attaches **every** link ever valid for that firm → fan
 We must keep only the link valid on the fiscal year-end date (`datadate`).
 
 ```{r chunk_4_3}
+
+nrow(bb)
+
 ## Naive join: what happens to the number of rows?
+naive <- bb |> left_join(link, by="gvkey", relationship="many-to-many")
+
+nrow(naive)
+
 ## Correct: keep only links valid on datadate
+bb_linked <- bb |> 
+  inner_join(link, by = join_by(gvkey, between(datadate, linkdt, linkenddt)))
+nrow(bb_linked)
+
 ## Check the key again: one row per gvkey-fyear?
+bb_linked |> count(gvkey, fyear) |> filter(n>1) |> nrow()
+
 ## Who got lost? anti_join shows firms without a valid link
+lost <- bb |> anti_join(bb_linked, by = c ("gvkey", "fyear"))
+nrow(lost)
+
+
+
+funnel <- add_step(funnel, "Valid CRSP link at fiscal year-end", bb_linked)
 
 
 ```
