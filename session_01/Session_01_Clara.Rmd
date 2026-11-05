@@ -116,8 +116,8 @@ Then check *Tools → Global Options → Git/SVN* and restart RStudio.
 
 ```{r chunk_2_2, eval=FALSE}
 ## Use the e-mail address of your GitHub account
-#usethis::use_git_config(user.name  = "Jan Seitz",
-#                        user.email = "jan.seitz@lmu.de")
+#usethis::use_git_config(user.name  = "Clara.Gross",
+#                        user.email = "clara.gross@campus.lmu.de")
 ```
 
 ### Chunk 2.3 · Give RStudio a key to GitHub (personal access token)
@@ -372,8 +372,7 @@ inhabitants[inhabitants < 500000]
 How many are they?
 
 ```{r task_A1}
-
-
+inhabitants[inhabitants>1e6]
 ```
 
 **Task A2 (verification):** Look up the population of *one* city in an official source (e.g., the statistical office of the country).
@@ -391,7 +390,6 @@ Factors are useful for categories such as countries, industries or audit firms.
 country <- factor(c("Germany","Finland","Sweden","Germany","Finland","Austria","China"))
 
 country
-
 ```
 
 ## Matrices — and the matrix trap
@@ -406,7 +404,7 @@ students_n <- c(8,1,1,1,1,1,1)
 
 m <- cbind(inhabitants,students=students_n)
 m
-class(m[,"inhabitants"])
+class(m[,"inhabitants"]) #why is there a , ?
 ## Add a text column: is the city at the sea?
 
 m2 <- cbind(m, sea = c("NO","YES","YES","NO","NO","NO","YES"))
@@ -451,7 +449,7 @@ party$drinks
 
 ```
 
-## Data frames (next week!)
+## Data frames
 
 A **data frame** is the most important object for data analysis: a rectangle with **columns = variables** and **rows = observations**.
 Each column has one type, but different columns can have different types.
@@ -506,7 +504,7 @@ Check your result against what you know about the class.
 ```{r task_C}
 ## Look up each student's drink in df_cities (a first "merge" — more in Tutorial 2)
 students$drink <- df_cities$drink[match(students$city, df_cities$city)]
-students[,c("student_id","city","drink")]
+students[,c("student_id","city","drink")]    #warum ist davor ein Komma?
 ## Check with what we know: 8 LMU students -> should be 8 x Helles beer
 ## Alternative with the same answer (independent implementation)
 
