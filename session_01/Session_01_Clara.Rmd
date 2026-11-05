@@ -649,6 +649,7 @@ What does that mean for how you use AI?
 
 ```{r chunk_6_1, error=TRUE}
 ## ---- AI-generated script: summary of student cities and Compustat ----
+#wrong script put after# to then run right script
 
 ## (a) Number of students per city, added to the city table
 n_per_city <- table(students$city)
@@ -657,11 +658,11 @@ city_info$n_students <- c(as.numeric(n_per_city), 0, 0)
 city_info[, c("city", "n_students")]
 
 ## (b) Population in millions
-city_info$inhabitants_m <- city_info$inhabitants / 1e6
+city_info$inhabitants_m <- city_info$inhabitants / 1e5
 city_info[, c("city", "inhabitants_m")]
 
 ## (c) German cities only
-german <- subset(city_info, country == "Germany")
+german <- subset(city_info, country = "Germany")
 nrow(german)
 
 ## (d) Average sales of Compustat firms
@@ -673,7 +674,7 @@ n_firms <- nrow(cs)
 cat("Number of firms:", n_firms, "\n")
 
 ## (f) Median total assets by fiscal year
-summarise_median(cs, at, by = fyear)
+summarise_median(cs, at, by = fyear) 
 ```
 
 ### Chunk 6.2 · Solution: bugs, fixes and checks
@@ -687,16 +688,23 @@ city_info$n_students <- as.numeric(n_per_city[city_info$city])
 city_info$n_students[is.na(city_info$n_students)] <- 0
 city_info[,c("city","n_students")]
 ## (b) millions — check: Munich must be about 1.5
+city_info$inhabitants_m <- city_info$inhabitants / 1e6
+city_info[, c("city", "inhabitants_m")]
+
 ## (c) comparison with == ; check: we know there are exactly two German cities
+german <- subset(city_info, country == "Germany")
+nrow(german)
+
 ## (d) units and currency: Compustat items are in millions of the reporting currency
 cs |> 
   group_by(curcd) |> 
   summarise(n = n(), avg_sales_millions = mean(sale, na.rm = TRUE))
 
 ## (e) firms vs. firm-years
+
 ## (f) an existing function — and an independent implementation as check
 
-
+## funtion does not exist
 ```
 
 ------------------------------------------------------------------------
