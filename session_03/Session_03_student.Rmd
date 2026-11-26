@@ -63,7 +63,7 @@ Every empirical study translates **concepts** (what we want to talk about) into 
 Libby boxes make this translation explicit:
 
 |   | Concept (X) | → | Concept (Y) |
-|--------------------|------------------|------------------|------------------|
+|----|----|----|----|
 | **Conceptual level** | Informativeness of disclosure policy | → | Analyst following |
 |  | ↓ *construct validity* |  | ↓ *construct validity* |
 | **Operational level** | FAF disclosure score (rating by analysts) | → | Number of analysts with an IBES forecast |
@@ -199,7 +199,7 @@ Accounting data almost always contain extreme values: tiny shell companies, data
 Two standard ways to limit their influence:
 
 |   | **Winsorizing** | **Truncating** (trimming) |
-|------------------------|------------------------|------------------------|
+|----|----|----|
 | What happens | values below the 1st / above the 99th percentile are **replaced** by these percentiles | observations below the 1st / above the 99th percentile are **deleted** |
 | Sample size | unchanged | smaller |
 | Typical use | continuous variables in regressions (most accounting papers: 1% / 99%) | when extreme values are likely errors or a different population |

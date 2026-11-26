@@ -61,7 +61,7 @@ Every merge needs a **key**: one or more variables that identify an observation 
 In accounting research, the most important keys are:
 
 | Identifier | Identifies | Source | Watch out |
-|-------------------|-------------------|------------------|------------------|
+|----|----|----|----|
 | `gvkey` | a firm | Compustat | 6-digit **text** with leading zeros |
 | `permno` | a security (share class) | CRSP | a firm can have several permnos |
 | `cusip` | a security | US/Canada | changes after name changes |
@@ -401,7 +401,7 @@ Today we build a modern version for 2010–2014 and count, step by step, how man
 ## Joins in dplyr
 
 | Function | Keeps |
-|--------------------------------------|------------------------------|
+|----|----|
 | `left_join(x, y)` | all rows of `x`; `NA` where `y` has no match |
 | `inner_join(x, y)` | only rows with a match in both |
 | `anti_join(x, y)` | rows of `x` **without** a match in `y` — your best diagnostic tool |
