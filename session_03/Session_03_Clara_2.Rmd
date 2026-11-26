@@ -29,7 +29,7 @@ This R Markdown belongs to the slides of **Tutorial 3**. Whenever a slide shows 
 | 5    | Design exercise: Lang & Lundholm (1996) today            |
 | 6    | Wrap-up                                                  |
 
-**Data needed in `data/`:** `compustat.csv`, `srn_main_esrs_kpi_v2.4.csv` (from Tutorial 2), `compustat_global_2023_2025.csv`.
+**Data needed in `data/`:** `compustat.csv`, `srn_main_esrs_kpi_v2.4.csv` (from Tutorial 2), `funda_annual.csv`.
 
 ------------------------------------------------------------------------
 
@@ -160,6 +160,9 @@ And what do you make of the industry shares in Chunk 2.2?
 
 ```{r chunk_2_4}
 
+cs <- cs |>  mutate(roa = if_else(at > 0,  ib/at, NA_real_))
+
+summary(cs$roa)
 
 ```
 
@@ -179,6 +182,13 @@ ggplot(data, aes(x = ..., y = ...)) +
 
 ```{r chunk_3_1}
 
+ggplot(cs, aes(x = mv)) + 
+  geom_histogram(bins = 50) +
+  labs(title = "Market value (USD millions)", x = NULL, y = "Firm-years")
+
+ggplot(cs, aes(x = log(mv))) + 
+  geom_histogram(bins = 50) +
+  labs(title = "Market value (USD millions)", x = "log(MV)", y = "Firm-years")
 
 ```
 
@@ -200,6 +210,26 @@ Both are decisions you must **report** (variable, cut-offs, pooled or by year).
 
 ```{r chunk_3_2}
 ## Test on numbers we know (known inputs!)
+winsorize <- function(x, p_low = 0.01, p_high = 0.99) {
+  cuts <- quantile(x, probs = c(p_low, p_high), type = 2, na.rm = TRUE) 
+  x[x < cuts[1]] <- cuts[1]
+  x[x > cuts[2]] <- cuts[2]
+}
+
+truncate <- function(x, p_low = 0.01, p_high = 0.99) {
+  cuts <- quantile(x, probs = c(p_low, p_high), type = 2, na.rm = TRUE) 
+  x[x < cuts[1] | x > cuts[2]] <- NA
+  x
+}
+
+
+## Test on numbers we know
+test <- c(-1000, 1:99, 5000)
+range(winsorize(test))
+
+sum(is.na(truncate(test)))
+
+sum
 
 
 ```
