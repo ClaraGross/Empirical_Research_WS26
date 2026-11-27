@@ -419,19 +419,19 @@ A simple proxy for **disclosure completeness**: the share of the 27 ESRS indicat
 
 ```{r chunk_4_4}
 
-srn_raw <- read_csv(here("data", "srn_main_esrs_kpi_v2.4"),
-                    col_types=cols(.default=col_character()))
+#srn_raw <- read_csv(here("data", "srn_main_esrs_kpi_v2.4"),
+#                    col_types=cols(.default=col_character()))
                     
                     
-completeness<- srn_raw |> 
-  group_by(company_id, isin, company_name, country, sector, year) |> 
-  summarise(n_kpis=n(),
+#completeness<- srn_raw |> 
+#  group_by(company_id, isin, company_name, country, sector, year) |> 
+#  summarise(n_kpis=n(),
             n_found=sum(!isna(value) & value !="NOT FOUND"),
                         share_found = n_found/27,
                         .groups="drop")
             
             
-summary(completeness$share_found)
+#summary(completeness$share_found)
 
 ## Plotting by your one
 
